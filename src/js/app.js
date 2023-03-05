@@ -1,7 +1,6 @@
-import $ from 'jquery';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import Editor from "./components/editor/editor.js";
 
-$.get('./files/api', data => {
-    data.forEach(file => {
-       $('body').append(`<h1>${file}</h1>`);
-    });
-}, 'JSON');
+const root = createRoot(document.getElementById('root'));
+root.render(<Editor/>);
