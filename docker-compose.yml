@@ -1,0 +1,38 @@
+version: '3.6'
+services:
+    nginx:
+        image: nginx:latest
+        container_name: ${APP_NAME}-nginx
+        ports:
+            - '80:80'
+            - '443:443'
+        volumes:
+            - "./nginx/:/etc/nginx/templates/"
+        environment:
+            - "NGINX_ENVSUBST_TEMPLATE_SUFFIX=.conf"
+            - "DOMAIN=${DOMAIN}"
+        restart: always
+
+    mysql:
+        image: mysql:8.0
+        container_name: ${APP_NAME}-mysql
+        volumes:
+            - ./db:/var/lib/mysql
+        restart: always
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+            MYSQL_DATABASE: ${DB_NAME}
+            MYSQL_USER: ${DB_USER}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: ${APP_NAME}-phpmyadmin
+        environment:
+            PMA_HOST: "${DB_HOST}"
+            PMA_PORT: 3306
+            MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD}"
+        ports:
+            - '8080:80'
+        links:
+            - mysql:mysql

@@ -1,11 +1,26 @@
 import axios from "axios";
 import React, {useEffect, useState} from "react";
+import '../helpers/iframeLoader.js';
 import uuid from "react-uuid";
 
 const Editor = () => {
 
+    const route = './files/project/';
     const [pageList, setPageList] = useState([]);
     const [newPageName, setNewPageName] = useState('');
+    const [currentPage, setCurrentPage] = useState('index.html');
+
+    const init = (page) => {
+        open(page);
+        loadPageList();
+    }
+
+    const open = (page) => {
+        setCurrentPage(route + page);
+        document.querySelector('iframe').load(currentPage, () => {
+            console.log(currentPage);
+        });
+    }
 
     const loadPageList = () => {
         axios
@@ -37,27 +52,30 @@ const Editor = () => {
     }
 
     useEffect(() => {
-        loadPageList();
+        init(currentPage);
     }, []);
 
-    const pages = pageList.map(page => {
-        return (
-           <h1 key={uuid()}>
-               {page}
-               <button onClick={() => deletePage(page)}>(X)</button>
-           </h1>
-        )
-    });
+    // const pages = pageList.map(page => {
+    //     return (
+    //        <h1 key={uuid()}>
+    //            {page}
+    //            <button onClick={() => deletePage(page)}>(X)</button>
+    //        </h1>
+    //     )
+    // });
 
     return (
         <>
-            <label>
-                <input onInput={(e) => setNewPageName(e.target.value)} type="text"/>
-            </label>
-            <button onClick={createNewPage}>
-                Create page
-            </button>
-            {pages}
+
+            <iframe src={currentPage} frameBorder="0"></iframe>
+
+            {/*<label>*/}
+            {/*    <input onInput={(e) => setNewPageName(e.target.value)} type="text"/>*/}
+            {/*</label>*/}
+            {/*<button onClick={createNewPage}>*/}
+            {/*    Create page*/}
+            {/*</button>*/}
+            {/*{pages}*/}
         </>
     );
 
