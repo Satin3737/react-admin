@@ -24,8 +24,12 @@
     ```shell
     docker-compose up
     ```
+4. Run gulp:
+    ```shell
+    npm run dev
+    ```
 
-4. Use phpmyadmin if nedeed:
+5. Use phpmyadmin if nedeed:
     ```shell
     phpmyadmin on route localhost:8080
     ```
