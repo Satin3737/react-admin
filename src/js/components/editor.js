@@ -7,31 +7,36 @@ const Editor = () => {
 
     let iframe;
     let virtualDom;
-    const route = './files/project/';
+    const projectRoute = './files/project/';
+    const apiRoute = './files/api/';
 
+    // const [virtualDom, setVirtualDom] = useState(null);
     const [pageList, setPageList] = useState([]);
     const [newPageName, setNewPageName] = useState('');
     const [currentPage, setCurrentPage] = useState('index.html');
 
     const init = (page) => {
+        console.log('init');
         iframe = document.querySelector('iframe');
         open(page);
         loadPageList();
     }
 
     const open = (page) => {
-        setCurrentPage(route + page + `?rnd=${Math.random()}`);
+        console.log('open');
+        setCurrentPage(projectRoute + page);
 
-        axios.get(route + page)
+        axios.get(projectRoute + page + `?rnd=${Math.random()}`)
             .then(res => parseStringToDOM(res.data))
             .then(wrapTextNodes)
             .then(dom => {
                 virtualDom = dom;
+                console.log(virtualDom)
                 return dom;
             })
             .then(serializeDOMToString)
-            .then(html => axios.post('./files/api/saveTempPage.php', {html}))
-            .then(() => iframe.load(route + 'temp.html'))
+            .then(html => axios.post(apiRoute + 'saveTempPage.php', {html}))
+            .then(() => iframe.load(projectRoute + 'temp.html'))
             .then(() => enableEditing());
     }
 
@@ -72,25 +77,49 @@ const Editor = () => {
     }
 
     const enableEditing = () => {
+        console.log(virtualDom)
         iframe.contentDocument.body.querySelectorAll('text-editor').forEach(element => {
             element.contentEditable = 'true';
             element.addEventListener('input', () => {
+                console.log(element)
                 onTextEdit(element);
             });
         });
+        console.log('edit')
     }
 
     const onTextEdit = (element) => {
+        console.log(virtualDom)
+        console.log('input')
         const id = element.getAttribute('nodeId');
         virtualDom.body.querySelector(`[nodeId="${id}"]`).innerHTML = element.innerHTML;
     }
 
+    const save = () => {
+        console.log('save');
+        console.log(virtualDom)
+        const newDom = virtualDom.cloneNode(virtualDom);
+        unwrapTextNodes(newDom);
+        const html = serializeDOMToString(newDom);
+        console.log(html)
+        axios.post(apiRoute + 'savePage.php', {
+           pageName: currentPage,
+           html: html
+        });
+    }
+
+    const unwrapTextNodes = (dom) => {
+        dom.body.querySelectorAll('text-editor').forEach(element => {
+           element.parentNode.replaceChild(element.firstChild, element);
+        });
+    }
+
     const loadPageList = () => {
+        console.log('load');
         axios
-            .get('./files/api/index.php')
+            .get(apiRoute +'index.php')
             .then(res => {
                 setPageList(res.data);
-                console.log(res.data)
             });
     }
 
@@ -130,7 +159,19 @@ const Editor = () => {
 
     return (
         <>
-
+            <button
+                onClick={() => save()}
+                style={{
+                    position: "absolute",
+                    zIndex: 1000,
+                    background: 'white',
+                    padding: '8px',
+                    border: 'none',
+                    color: '#232323'
+                }}
+            >
+                Click
+            </button>
             <iframe src={currentPage} frameBorder="0"></iframe>
 
             {/*<label>*/}

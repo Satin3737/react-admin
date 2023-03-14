@@ -1,6 +1,6 @@
 HTMLIFrameElement.prototype.load = function (url, callback) {
     const iframe = this;
-
+    console.log('iframe')
     try {
         iframe.src = url + '?rnd=' + Math.random().toString().substring(2);
     } catch (error) {
