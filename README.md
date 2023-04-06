@@ -24,9 +24,9 @@
     ```shell
     docker-compose up
     ```
-4. Run gulp:
+4. Run vite:
     ```shell
-    npm run dev
+    npm run build
     ```
 
 5. Use phpmyadmin if nedeed:
