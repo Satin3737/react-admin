@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build -w --emptyOutDir",
+    "build": "vite build -w",
     "preview": "vite preview"
   },
   "devDependencies": {

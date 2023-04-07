@@ -1,6 +1,8 @@
 import axios from "axios";
 import React, {Component} from "react";
 import '../helpers/iframeLoader.js';
+import DomHelper from "../helpers/domHelper.js";
+import EditorText from "./editorText.js";
 import uuid from "react-uuid";
 
 export default class Editor extends Component {
@@ -33,83 +35,47 @@ export default class Editor extends Component {
 
         axios
             .get(this.route.projectRoute + page + `?rnd=${Math.random()}`)
-            .then(res => this.parseStringToDOM(res.data))
-            .then(this.wrapTextNodes)
+            .then(res => DomHelper.parseStringToDOM(res.data))
+            .then(DomHelper.wrapTextNodes)
             .then(dom => {
                 this.virtualDom = dom;
                 return dom;
             })
-            .then(this.serializeDOMToString)
+            .then(DomHelper.serializeDOMToString)
             .then(html => axios.post(this.route.apiRoute + 'saveTempPage.php', {html}))
             .then(() => this.iframe.load(this.route.projectRoute + 'temp.html'))
-            .then(() => this.enableEditing());
+            .then(() => this.enableEditing())
+            .then(() => this.injectStyles());
     }
-
-    parseStringToDOM = (str) => {
-        const parser = new DOMParser();
-        return parser.parseFromString(str, 'text/html');
-    }
-
-    wrapTextNodes = (dom) => {
-        const body = dom.body;
-        let textNodes = [];
-
-        function findAllTextNodes(element) {
-            element.childNodes.forEach(node => {
-                if (node.nodeName === '#text' && node.nodeValue.replace(/\s+/g, '').length > 0) {
-                    textNodes.push(node);
-                } else {
-                    findAllTextNodes(node);
-                }
-            })
-        }
-
-        findAllTextNodes(body);
-
-        textNodes.forEach((node, i) => {
-            const wrapper = dom.createElement('text-editor');
-            node.parentNode.replaceChild(wrapper, node);
-            wrapper.appendChild(node);
-            wrapper.setAttribute('nodeId', i);
-        });
-
-        return dom;
-    }
-
-    serializeDOMToString = (dom) => {
-        const serializer = new XMLSerializer();
-        return serializer.serializeToString(dom);
-    }
-
+    
     enableEditing = () => {
         this.iframe.contentDocument.body.querySelectorAll('text-editor').forEach(element => {
-            element.contentEditable = 'true';
-            element.addEventListener('input', () => {
-                this.onTextEdit(element);
-            });
+            const id = element.getAttribute('nodeId');
+            const virtualElement = this.virtualDom.body.querySelector(`[nodeId="${id}"]`);
+            new EditorText(element, virtualElement);
         });
     }
-
-    onTextEdit = (element) => {
-        const id = element.getAttribute('nodeId');
-        this.virtualDom.body.querySelector(`[nodeId="${id}"]`).innerHTML = element.innerHTML;
+    
+    injectStyles() {
+        const style = this.iframe.contentDocument.createElement('style');
+        style.innerHTML = `
+            text-editor:hover, text-editor:focus {
+                outline: 2px solid orange;
+                outline-offset: 4px;
+            }
+        `;
+        this.iframe.contentDocument.head.appendChild(style);
     }
 
     save = () => {
         const newDom = this.virtualDom.cloneNode(this.virtualDom);
-        this.unwrapTextNodes(newDom);
-        const html = this.serializeDOMToString(newDom);
+        DomHelper.unwrapTextNodes(newDom);
+        const html = DomHelper.serializeDOMToString(newDom);
         axios
             .post(this.route.apiRoute + 'savePage.php', {pageName: this.currentPage, html});
     }
-
-    unwrapTextNodes = (dom) => {
-        dom.body.querySelectorAll('text-editor').forEach(element => {
-           element.parentNode.replaceChild(element.firstChild, element);
-        });
-    }
-
-
+    
+    
     loadPageList = () => {
         axios
             .get(this.route.apiRoute +'index.php')
@@ -129,7 +95,7 @@ export default class Editor extends Component {
             .then(this.loadPageList())
             .catch(() => alert('Page dont exist!'));
     }
-
+    
     render() {
 
         // const pages = pageList.map(page => {
@@ -154,7 +120,7 @@ export default class Editor extends Component {
                         color: '#232323'
                     }}
                 >
-                    Click
+                    Save
                 </button>
                 <iframe src={this.currentPage} frameBorder="0"></iframe>
 
