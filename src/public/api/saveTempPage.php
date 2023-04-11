@@ -2,7 +2,7 @@
 
 $_POST = json_decode(file_get_contents('php://input'), true);
 
-$newFile = '../project/temp.html';
+$newFile = '../project/someTempPage.html';
 
 if ($_POST['html']) {
     file_put_contents($newFile, $_POST['html']);

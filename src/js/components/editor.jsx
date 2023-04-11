@@ -1,9 +1,13 @@
 import axios from "axios";
 import React, {Component} from "react";
+import Uikit from "uikit";
 import '../helpers/iframeLoader.js';
 import DomHelper from "../helpers/domHelper.js";
-import EditorText from "./editorText.js";
-import uuid from "react-uuid";
+import EditorText from "./editorText.jsx";
+import Spinner from "./spinner.jsx";
+import ConfirmModal from "./confirmModal.jsx";
+import ChooseModal from "./chooseModal.jsx";
+import Panel from "./panel.jsx";
 
 export default class Editor extends Component {
     constructor() {
@@ -11,26 +15,33 @@ export default class Editor extends Component {
         this.currentPage = 'index.html';
         this.state = {
             pageList: [],
-            newPageName: ''
+            backupsList: [],
+            newPageName: '',
+            loading: true
         }
         this.route = {
             projectRoute: './project/',
-            apiRoute: './api/'
+            apiRoute: './api/',
+            backupsRoute: './backups/'
         }
-        this.createNewPage = this.createNewPage.bind(this);
     }
 
-    componentDidMount() {
-        this.init(this.currentPage);
+    componentDidMount = () => {
+        this.init(null, this.currentPage);
     }
 
-    init = (page) => {
+    init = (e, page) => {
+        if (e) {
+            e.preventDefault();
+        }
+        this.isLoading();
         this.iframe = document.querySelector('iframe');
-        this.open(page);
+        this.open(page, this.isLoaded);
         this.loadPageList();
+        this.loadBackupsList();
     }
 
-    open = (page) => {
+    open = (page, cb) => {
         this.currentPage = page;
 
         axios
@@ -43,9 +54,13 @@ export default class Editor extends Component {
             })
             .then(DomHelper.serializeDOMToString)
             .then(html => axios.post(this.route.apiRoute + 'saveTempPage.php', {html}))
-            .then(() => this.iframe.load(this.route.projectRoute + 'temp.html'))
+            .then(() => this.iframe.load(this.route.projectRoute + 'someTempPage.html'))
+            .then(() => axios.post(this.route.apiRoute + 'deleteTempPage.php'))
             .then(() => this.enableEditing())
-            .then(() => this.injectStyles());
+            .then(() => this.injectStyles())
+            .then(cb);
+
+        this.loadBackupsList();
     }
     
     enableEditing = () => {
@@ -56,7 +71,7 @@ export default class Editor extends Component {
         });
     }
     
-    injectStyles() {
+    injectStyles = () => {
         const style = this.iframe.contentDocument.createElement('style');
         style.innerHTML = `
             text-editor:hover, text-editor:focus {
@@ -67,70 +82,72 @@ export default class Editor extends Component {
         this.iframe.contentDocument.head.appendChild(style);
     }
 
-    save = () => {
+    save = async (cb) => {
+        this.isLoading();
         const newDom = this.virtualDom.cloneNode(this.virtualDom);
         DomHelper.unwrapTextNodes(newDom);
         const html = DomHelper.serializeDOMToString(newDom);
-        axios
-            .post(this.route.apiRoute + 'savePage.php', {pageName: this.currentPage, html});
+        await axios
+            .post(this.route.apiRoute + 'savePage.php', {pageName: this.currentPage, html})
+            .then(cb)
+            .finally(this.isLoaded);
+
+        this.loadBackupsList();
     }
-    
-    
+
     loadPageList = () => {
         axios
-            .get(this.route.apiRoute +'index.php')
+            .get(this.route.apiRoute +'pageList.php')
             .then(res => this.setState({pageList: res.data}));
     }
 
-    createNewPage() {
+    loadBackupsList = () => {
         axios
-            .post(this.route.apiRoute + 'createNewPage.php', {"name": this.state.newPageName})
-            .then(this.loadPageList())
-            .catch(() => alert('Page dont exist!'));
+            .get(this.route.backupsRoute + 'backups.json')
+            .then(res => this.setState({backupsList: res.data.filter(backup => backup.page === this.currentPage)}))
+            .catch(() => console.log('no backups'));
     }
 
-    deletePage(page) {
-        axios
-            .post(this.route.apiRoute + 'deletePage.php', {"name": page})
-            .then(this.loadPageList())
-            .catch(() => alert('Page dont exist!'));
+    restoreBackup = (e, backup) => {
+        if (e) {
+            e.preventDefault();
+        }
+        Uikit.modal.confirm('Do you really want to restore this page from chosen backup?')
+            .then(() => {
+                this.isLoading();
+                return axios
+                    .post(this.route.apiRoute + 'restoreBackup.php', {'page': this.currentPage, 'file': backup});
+            })
+            .then(() => {
+               this.open(this.currentPage, this.isLoaded);
+            });
+    }
+
+    isLoading = () => {
+        this.setState({
+           loading: true
+        });
+    }
+
+    isLoaded = () => {
+        this.setState({
+            loading: false
+        });
     }
     
     render() {
-
-        // const pages = pageList.map(page => {
-        //     return (
-        //        <h1 key={uuid()}>
-        //            {page}
-        //            <button onClick={() => this.deletePage(page)}>(X)</button>
-        //        </h1>
-        //     )
-        // });
+        const {loading, pageList, backupsList} = this.state;
+        let spinner;
+        loading ? spinner = <Spinner active/> : spinner = <Spinner/>;
 
         return (
             <>
-                <button
-                    onClick={() => this.save()}
-                    style={{
-                        position: "absolute",
-                        zIndex: 1000,
-                        background: 'white',
-                        padding: '8px',
-                        border: 'none',
-                        color: '#232323'
-                    }}
-                >
-                    Save
-                </button>
-                <iframe src={this.currentPage} frameBorder="0"></iframe>
-
-                {/*<label>*/}
-                {/*    <input onInput={(e) => this.setNewPageName(e.target.value)} type="text"/>*/}
-                {/*</label>*/}
-                {/*<button onClick={this.createNewPage}>*/}
-                {/*    Create page*/}
-                {/*</button>*/}
-                {/*{pages}*/}
+                {spinner}
+                <Panel/>
+                <iframe src="" frameBorder="0"></iframe>
+                <ChooseModal targetId={'modal-open'} data={pageList} redirect={this.init}/>
+                <ChooseModal targetId={'modal-backup'} data={backupsList} redirect={this.restoreBackup}/>
+                <ConfirmModal targetId={'modal-save'} method={this.save}/>
             </>
         );
     }

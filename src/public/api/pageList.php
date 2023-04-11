@@ -1,6 +1,6 @@
 <?php
 
-$htmlFiles = glob('../*.html');
+$htmlFiles = glob('../project/*.html');
 $respone = [];
 
 foreach ($htmlFiles as $file) {
