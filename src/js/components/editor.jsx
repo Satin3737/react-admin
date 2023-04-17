@@ -8,6 +8,7 @@ import Spinner from "./spinner.jsx";
 import ConfirmModal from "./confirmModal.jsx";
 import ChooseModal from "./chooseModal.jsx";
 import Panel from "./panel.jsx";
+import EditorMeta from "./editorMeta.jsx";
 
 export default class Editor extends Component {
     constructor() {
@@ -148,6 +149,7 @@ export default class Editor extends Component {
                 <ChooseModal targetId={'modal-open'} data={pageList} redirect={this.init}/>
                 <ChooseModal targetId={'modal-backup'} data={backupsList} redirect={this.restoreBackup}/>
                 <ConfirmModal targetId={'modal-save'} method={this.save}/>
+                {this.virtualDom ? <EditorMeta targetId={'modal-meta'} virtualDom={this.virtualDom}/> : null}
             </>
         );
     }

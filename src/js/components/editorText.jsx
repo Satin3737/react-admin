@@ -11,22 +11,22 @@ export default class EditorText {
         }
     }
 
-    onClick() {
+    onClick = () => {
         this.element.contentEditable = 'true';
         this.element.focus();
     }
     
-    onBlur() {
+    onBlur = () => {
         this.element.removeAttribute('contenteditable');
     }
     
-    onKeypress(e) {
+    onKeypress = (e) => {
         if (e.keyCode === 13) {
             this.element.blur();
         }
     }
 
-    onContextMenu(e) {
+    onContextMenu = (e) => {
         e.preventDefault();
         this.onClick();
     }
