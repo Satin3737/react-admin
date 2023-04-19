@@ -10,6 +10,7 @@ import ChooseModal from "./chooseModal.jsx";
 import Panel from "./panel.jsx";
 import EditorMeta from "./editorMeta.jsx";
 import EditorImages from "./editorImages.jsx";
+import Helper from "../helpers/helper.js";
 
 export default class Editor extends Component {
     constructor() {
@@ -76,7 +77,7 @@ export default class Editor extends Component {
         this.iframe.contentDocument.body.querySelectorAll('[editable-img-id]').forEach(element => {
             const id = element.getAttribute('editable-img-id');
             const virtualElement = this.virtualDom.body.querySelector(`[editable-img-id="${id}"]`);
-            new EditorImages(element, virtualElement);
+            new EditorImages(element, virtualElement, this.isLoading, this.isLoaded, this.showNotifications);
         });
     }
     
@@ -94,7 +95,7 @@ export default class Editor extends Component {
         this.iframe.contentDocument.head.appendChild(style);
     }
 
-    save = async (cb) => {
+    save = async () => {
         this.isLoading();
         const newDom = this.virtualDom.cloneNode(this.virtualDom);
         DomHelper.unwrapTextNodes(newDom);
@@ -102,7 +103,8 @@ export default class Editor extends Component {
         const html = DomHelper.serializeDOMToString(newDom);
         await axios
             .post(this.route.apiRoute + 'savePage.php', {pageName: this.currentPage, html})
-            .then(cb)
+            .then(() => Helper.showNotifications('Saved', 'success'))
+            .catch(() => Helper.showNotifications('Saving error', 'danger'))
             .finally(this.isLoaded);
 
         this.loadBackupsList();
