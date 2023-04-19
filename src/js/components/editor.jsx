@@ -9,6 +9,7 @@ import ConfirmModal from "./confirmModal.jsx";
 import ChooseModal from "./chooseModal.jsx";
 import Panel from "./panel.jsx";
 import EditorMeta from "./editorMeta.jsx";
+import EditorImages from "./editorImages.jsx";
 
 export default class Editor extends Component {
     constructor() {
@@ -49,6 +50,7 @@ export default class Editor extends Component {
             .get(this.route.projectRoute + page + `?rnd=${Math.random()}`)
             .then(res => DomHelper.parseStringToDOM(res.data))
             .then(DomHelper.wrapTextNodes)
+            .then(DomHelper.wrapImages)
             .then(dom => {
                 this.virtualDom = dom;
                 return dom;
@@ -70,12 +72,21 @@ export default class Editor extends Component {
             const virtualElement = this.virtualDom.body.querySelector(`[nodeId="${id}"]`);
             new EditorText(element, virtualElement);
         });
+        
+        this.iframe.contentDocument.body.querySelectorAll('[editable-img-id]').forEach(element => {
+            const id = element.getAttribute('editable-img-id');
+            const virtualElement = this.virtualDom.body.querySelector(`[editable-img-id="${id}"]`);
+            new EditorImages(element, virtualElement);
+        });
     }
     
     injectStyles = () => {
         const style = this.iframe.contentDocument.createElement('style');
         style.innerHTML = `
-            text-editor:hover, text-editor:focus {
+            text-editor:hover,
+            text-editor:focus,
+            [editable-img-id]:hover,
+            [editable-img-id]:focus {
                 outline: 2px solid orange;
                 outline-offset: 4px;
             }
@@ -87,6 +98,7 @@ export default class Editor extends Component {
         this.isLoading();
         const newDom = this.virtualDom.cloneNode(this.virtualDom);
         DomHelper.unwrapTextNodes(newDom);
+        DomHelper.unwrapImages(newDom);
         const html = DomHelper.serializeDOMToString(newDom);
         await axios
             .post(this.route.apiRoute + 'savePage.php', {pageName: this.currentPage, html})
@@ -146,6 +158,7 @@ export default class Editor extends Component {
                 {spinner}
                 <Panel/>
                 <iframe src="" frameBorder="0"></iframe>
+                <input id="img-upload" type="file" accept="image/*" style={{display: 'none'}}/>
                 <ChooseModal targetId={'modal-open'} data={pageList} redirect={this.init}/>
                 <ChooseModal targetId={'modal-backup'} data={backupsList} redirect={this.restoreBackup}/>
                 <ConfirmModal targetId={'modal-save'} method={this.save}/>
