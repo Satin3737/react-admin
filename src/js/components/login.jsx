@@ -16,7 +16,8 @@ export default class Login extends Component {
     
     render() {
         const {pass} = this.state;
-        const {login} = this.props;
+        const {login, loginError} = this.props;
+        const validationError = loginError ? <span className="login-error">{loginError}</span> : null;
         
         return (
             <div className="login-container">
@@ -24,6 +25,7 @@ export default class Login extends Component {
                     <h2 className="uk-modal-title uk-text-center">Login</h2>
                     <div className="uk-margin-top uk-text-lead">Password:</div>
                     <input type="password" className="uk-input uk-margin-top" placeholder="Password" value={pass} onInput={this.onPasswordInput}/>
+                    {validationError}
                     <button className="uk-button uk-button-primary uk-margin-top" onClick={() => login(pass)}>Submit</button>
                 </div>
             </div>

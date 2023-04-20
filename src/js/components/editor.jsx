@@ -22,7 +22,8 @@ export default class Editor extends Component {
             backupsList: [],
             newPageName: '',
             loading: true,
-            auth: false
+            auth: false,
+            loginError: '',
         }
         this.route = {
             projectRoute: './project/',
@@ -45,8 +46,6 @@ export default class Editor extends Component {
         axios
             .get(this.route.apiRoute + 'checkAuth.php')
             .then(res => {
-                
-                console.log(res.data)
                 this.setState({
                     auth: res.data.auth
                 });
@@ -60,10 +59,23 @@ export default class Editor extends Component {
                 .post(this.route.apiRoute + 'login.php', {'password': pass})
                 .then(res => {
                     this.setState({
-                        auth: res.data.auth
+                        auth: res.data.auth,
+                        loginError: res.data.auth ? '' : 'Wrong password'
                     });
                 });
+        } else {
+            this.setState({
+                loginError: 'Password must be at least 6 characters'
+            });
         }
+    }
+    
+    logout = () => {
+        axios
+            .get(this.route.apiRoute + 'logout.php')
+            .then(() => {
+                window.location.replace('/');
+            });
     }
 
     init = (e, page) => {
@@ -144,7 +156,7 @@ export default class Editor extends Component {
 
         this.loadBackupsList();
     }
-
+    
     loadPageList = () => {
         axios
             .get(this.route.apiRoute +'pageList.php')
@@ -186,12 +198,12 @@ export default class Editor extends Component {
     }
     
     render() {
-        const {loading, pageList, backupsList, auth} = this.state;
+        const {loading, pageList, backupsList, auth, loginError} = this.state;
         let spinner;
         loading ? spinner = <Spinner active/> : spinner = <Spinner/>;
         
         if (!auth) {
-            return <Login login={this.login}/>;
+            return <Login login={this.login} loginError={loginError}/>;
         }
     
         return (
@@ -202,7 +214,24 @@ export default class Editor extends Component {
                 <input id="img-upload" type="file" accept="image/*" style={{display: 'none'}}/>
                 <ChooseModal targetId={'modal-open'} data={pageList} redirect={this.init}/>
                 <ChooseModal targetId={'modal-backup'} data={backupsList} redirect={this.restoreBackup}/>
-                <ConfirmModal targetId={'modal-save'} method={this.save}/>
+                <ConfirmModal
+                    targetId={'modal-save'}
+                    method={this.save}
+                    texts={{
+                        title: 'Saving',
+                        description: 'Did you wanna save it?',
+                        button: 'Save'
+                    }}
+                />
+                <ConfirmModal
+                    targetId={'modal-logout'}
+                    method={this.logout}
+                    texts={{
+                        title: 'Logout',
+                        description: 'Did you wanna logout?',
+                        button: 'Logout'
+                    }}
+                />
                 {this.virtualDom ? <EditorMeta targetId={'modal-meta'} virtualDom={this.virtualDom}/> : null}
             </>
         );

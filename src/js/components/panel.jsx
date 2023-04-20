@@ -12,8 +12,11 @@ const Panel = () => {
             <button className="uk-button uk-button-primary uk-margin-small-right" data-uk-toggle="target: #modal-save">
                 Save
             </button>
-            <button className="uk-button uk-button-primary" data-uk-toggle="target: #modal-backup">
+            <button className="uk-button uk-button-primary uk-margin-small-right" data-uk-toggle="target: #modal-backup">
                 Backup
+            </button>
+            <button className="uk-button uk-button-primary" data-uk-toggle="target: #modal-logout">
+                Logout
             </button>
         </div>
     )
