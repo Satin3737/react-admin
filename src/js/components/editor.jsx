@@ -11,6 +11,7 @@ import Panel from "./panel.jsx";
 import EditorMeta from "./editorMeta.jsx";
 import EditorImages from "./editorImages.jsx";
 import Helper from "../helpers/helper.js";
+import Login from "./login.jsx";
 
 export default class Editor extends Component {
     constructor() {
@@ -20,7 +21,8 @@ export default class Editor extends Component {
             pageList: [],
             backupsList: [],
             newPageName: '',
-            loading: true
+            loading: true,
+            auth: false
         }
         this.route = {
             projectRoute: './project/',
@@ -30,18 +32,51 @@ export default class Editor extends Component {
     }
 
     componentDidMount = () => {
-        this.init(null, this.currentPage);
+        this.checkAuth();
+    }
+    
+    componentDidUpdate(prevProps, prevState) {
+        if (this.state.auth !== prevState.auth) {
+            this.init(null, this.currentPage);
+        }
+    }
+    
+    checkAuth = () => {
+        axios
+            .get(this.route.apiRoute + 'checkAuth.php')
+            .then(res => {
+                
+                console.log(res.data)
+                this.setState({
+                    auth: res.data.auth
+                });
+            });
+        
+    }
+    
+    login = (pass) => {
+        if (pass.length >= 6) {
+            axios
+                .post(this.route.apiRoute + 'login.php', {'password': pass})
+                .then(res => {
+                    this.setState({
+                        auth: res.data.auth
+                    });
+                });
+        }
     }
 
     init = (e, page) => {
         if (e) {
             e.preventDefault();
         }
-        this.isLoading();
-        this.iframe = document.querySelector('iframe');
-        this.open(page, this.isLoaded);
-        this.loadPageList();
-        this.loadBackupsList();
+        if (this.state.auth) {
+            this.isLoading();
+            this.iframe = document.querySelector('iframe');
+            this.open(page, this.isLoaded);
+            this.loadPageList();
+            this.loadBackupsList();
+        }
     }
 
     open = (page, cb) => {
@@ -151,10 +186,14 @@ export default class Editor extends Component {
     }
     
     render() {
-        const {loading, pageList, backupsList} = this.state;
+        const {loading, pageList, backupsList, auth} = this.state;
         let spinner;
         loading ? spinner = <Spinner active/> : spinner = <Spinner/>;
-
+        
+        if (!auth) {
+            return <Login login={this.login}/>;
+        }
+    
         return (
             <>
                 {spinner}
